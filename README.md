@@ -583,3 +583,56 @@ set(gca,'xticklabel',{'RR','Max C/I','PF'});
 ylabel('Jain''s Fairness Index'); 
 title('Fairness Comparison'); 
 ```
+
+## Experiment-3 : Path Loss Models : 
+```matlab
+function pathloss_expected_models()
+    % Frequency in GHz
+    fc = 3.5;
+    % Distance in meters (log scale)
+    d = logspace(0, 3.3, 200);  % 1 m to ~2000 m
+    % Free-space reference path loss at 1 m
+    PL0 = 32.4 + 20*log10(fc);
+    % ---- Path-loss exponents ----
+    % LOS
+    n_RMa_LOS = 2.0;
+    n_UMa_LOS = 2.7;
+    n_UMi_LOS = 3.0;
+    n_InH_LOS = 3.3;
+    % NLOS
+    n_RMa_NLOS = 2.7;
+    n_UMa_NLOS = 3.2;
+    n_UMi_NLOS = 3.5;
+    n_InH_NLOS = 4.0;
+    % ---- Compute LOS ----
+    PL_RMa_LOS = PL0 + 10*n_RMa_LOS*log10(d);
+    PL_UMa_LOS = PL0 + 10*n_UMa_LOS*log10(d);
+    PL_UMi_LOS = PL0 + 10*n_UMi_LOS*log10(d);
+    PL_InH_LOS = PL0 + 10*n_InH_LOS*log10(d);
+    % ---- Compute NLOS ----
+    PL_RMa_NLOS = PL0 + 10*n_RMa_NLOS*log10(d);
+    PL_UMa_NLOS = PL0 + 10*n_UMa_NLOS*log10(d);
+    PL_UMi_NLOS = PL0 + 10*n_UMi_NLOS*log10(d);
+    PL_InH_NLOS = PL0 + 10*n_InH_NLOS*log10(d);
+    % ---- Plot ----
+    figure; hold on; grid on;
+    % LOS (solid lines)
+    semilogx(d, PL_RMa_LOS, 'g', 'LineWidth', 2);
+    semilogx(d, PL_UMa_LOS, 'b', 'LineWidth', 2);
+    semilogx(d, PL_UMi_LOS, 'r', 'LineWidth', 2);
+    semilogx(d, PL_InH_LOS, 'm', 'LineWidth', 2);
+    % NLOS (dashed lines)
+    semilogx(d, PL_RMa_NLOS, 'g--', 'LineWidth', 2);
+    semilogx(d, PL_UMa_NLOS, 'b--', 'LineWidth', 2);
+    semilogx(d, PL_UMi_NLOS, 'r--', 'LineWidth', 2);
+    semilogx(d, PL_InH_NLOS, 'm--', 'LineWidth', 2);
+    xlabel('Distance (m)');
+    ylabel('Path Loss (dB)');
+    title('Expectation-Matched Path Loss Models (LOS + NLOS)');
+    legend('RMa LOS','UMa LOS','UMi LOS','InH LOS', ...
+           'RMa NLOS','UMa NLOS','UMi NLOS','InH NLOS', ...
+           'Location','northwest');
+    xlim([1 2000]);
+    ylim([50 200]);
+end
+```
