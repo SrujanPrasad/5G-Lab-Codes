@@ -584,7 +584,7 @@ ylabel('Jain''s Fairness Index');
 title('Fairness Comparison'); 
 ```
 
-## Experiment-3 : Path Loss Models : 
+## Experiment-4 : Path Loss Models : 
 ```matlab
 function pathloss_expected_models()
     % Frequency in GHz
@@ -635,4 +635,101 @@ function pathloss_expected_models()
     xlim([1 2000]);
     ylim([50 200]);
 end
+```
+
+## Experiment-5 :Perfomance of OFDMA SU-MIMO
+```matlab
+% ============================================================
+% OFDMA + SU-MIMO Throughput Simulation (SISO / 2x2 / 4x4)
+% MATLAB version using qammod/qamdemod (no System Objects)
+% ============================================================
+clear; clc; close all;
+%% ---------------- Simulation Parameters --------------------
+numSubcarriers   = 256;         % OFDMA grid size
+numSymbols       = 14;          % OFDM symbols per frame
+bitsPerSymbol    = 4;           % 4 = 16QAM, 2 = QPSK
+M                = 2^bitsPerSymbol;
+SNRdB            = 0:2:30;      % SNR values to test
+numFrames        = 150;         % Number of frames per SNR
+antennaConfigs   = [1 1; 2 2; 4 4];   % SISO, 2x2, 4x4
+%% For Gray-coded QAM using qammod/qamdemod
+modOrder = M;
+symbolMap = 0:modOrder-1;
+%% ---------------- Result Storage ---------------------------
+throughput = zeros(size(antennaConfigs,1), length(SNRdB));
+% ============================================================
+%                     MAIN SIMULATION LOOP
+% ============================================================
+for cfg = 1:size(antennaConfigs,1)
+    Nt = antennaConfigs(cfg,1);  % Tx antennas
+    Nr = antennaConfigs(cfg,2);  % Rx antennas
+    fprintf("\nSimulating %dx%d SU-MIMO...\n", Nt, Nr);
+    for si = 1:length(SNRdB)
+        snr = SNRdB(si);
+        noiseVar = Nt./(10^(snr/10));  % scaling for MIMO system
+        bitsTotal = 0;
+        bitsCorrect = 0;
+        for f = 1:numFrames
+            % ---------------------------------------------------------
+            % 1. OFDMA Grid → bits → QAM symbols
+            % ---------------------------------------------------------
+            numBits = numSubcarriers * numSymbols * bitsPerSymbol * Nt;
+            txBits  = randi([0 1], numBits, 1);
+            % Bits → integers
+            txInts = bi2de(reshape(txBits, bitsPerSymbol, []).','left-msb');
+            % QAM modulate (average power normalized)
+            txSymbols = qammod(txInts, M, 'gray', 'UnitAveragePower', true);
+            % Reshape into OFDMA grid: SC × SYM × Nt
+            txSymbols = reshape(txSymbols, numSubcarriers, numSymbols, Nt);
+            % ---------------------------------------------------------
+            % 2. Rayleigh MIMO Channel + AWGN
+            % ---------------------------------------------------------
+            H = (randn(Nr,Nt) + 1j*randn(Nr,Nt)) / sqrt(2);  % i.i.d Rayleigh
+            rxSymbols = zeros(numSubcarriers, numSymbols, Nr);
+            for sc = 1:numSubcarriers
+                for sy = 1:numSymbols
+                    txVec = squeeze(txSymbols(sc,sy,:));
+                    noise = sqrt(noiseVar/2)*(randn(Nr,1)+1j*randn(Nr,1));
+                    rxSymbols(sc,sy,:) = H * txVec + noise;
+                end
+            end
+            % ---------------------------------------------------------
+            % 3. MMSE Equalization
+            % ---------------------------------------------------------
+            W = (H'*H + noiseVar*eye(Nt)) \ H';   % Nt × Nr
+            eqSymbols = zeros(numSubcarriers, numSymbols, Nt);
+            for sc = 1:numSubcarriers
+                for sy = 1:numSymbols
+                    r = squeeze(rxSymbols(sc,sy,:));
+                    eqSymbols(sc,sy,:) = W * r;
+                end
+            end
+            % ---------------------------------------------------------
+            % 4. QAM Demodulation
+            % ---------------------------------------------------------
+            eqVec = eqSymbols(:);
+            rxInts = qamdemod(eqVec, M, 'gray', 'UnitAveragePower', true);
+            % integers → bits
+            rxBits = reshape(de2bi(rxInts, bitsPerSymbol, 'left-msb').', [], 1);
+            % ---------------------------------------------------------
+            % 5. Throughput Measurement
+            % ---------------------------------------------------------
+            bitsTotal   = bitsTotal + numBits;
+            bitsCorrect = bitsCorrect + sum(rxBits == txBits);
+        end % frames
+        ber = 1 - bitsCorrect/bitsTotal;
+        throughput(cfg,si) = bitsCorrect / numFrames; % bits/frame
+        fprintf("  SNR = %2d dB → BER = %.3g\n", snr, ber);
+    end % SNR
+end % antenna configs
+% ============================================================
+%                     PLOTTING RESULTS
+% ============================================================
+figure; hold on; grid on;
+plot(SNRdB, throughput(1,:), '-o', 'LineWidth', 2);
+plot(SNRdB, throughput(2,:), '-s', 'LineWidth', 2);
+plot(SNRdB, throughput(3,:), '-^', 'LineWidth', 2);
+xlabel('SNR (dB)'); ylabel('Throughput (bits/frame)');
+title('Throughput vs SNR for SISO / 2×2 / 4×4 SU-MIMO');
+legend('SISO (1x1)', '2×2 SU-MIMO', '4×4 SU-MIMO', 'Location','northwest');
 ```
