@@ -223,6 +223,13 @@ title('SIMO: BER vs Number of Rx antennas (MRC combining, 64-QAM, Rayleigh)');
 ```
 
 MIMO Beamforming (example)
+
+```
+openExample('phased/MIMOBeamformingExample')
+```
+
+or
+
 ```matlab
 %% Beamforming for MIMO-OFDM Systems
 % This example shows how to model a point-to-point MIMO-OFDM system with
