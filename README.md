@@ -733,3 +733,97 @@ xlabel('SNR (dB)'); ylabel('Throughput (bits/frame)');
 title('Throughput vs SNR for SISO / 2×2 / 4×4 SU-MIMO');
 legend('SISO (1x1)', '2×2 SU-MIMO', '4×4 SU-MIMO', 'Location','northwest');
 ```
+
+## Experiment-6 :5G Numerology with HARQ
+
+```
+openExample('5g/Modeling5GNRTransportChannelsWithHARQExample')
+```
+
+## Experiment-7 :MIMO Channel Behavior
+```
+openExample('comm/IntroductionToMimoSystemExample');
+```
+
+## Experiment-8 :IMpact of Interference 
+
+```
+openExample('5g/NRIntercellInterferenceModelingExample')
+```
+
+or
+
+```matlab
+clc;
+clear;
+close all;
+%% Simulation Parameters
+numUsers = 50;              % Number of users
+numInterferingCells = 6;    % Neighboring cells
+cellRadius = 500;           % Cell radius in meters
+txPower_dBm = 46;           % Transmit power (dBm)
+noisePower_dBm = -100;      % Noise power (dBm)
+bandwidth = 20e6;           % 20 MHz bandwidth
+%% Convert dBm to Watts
+txPower = 10^((txPower_dBm-30)/10);
+noisePower = 10^((noisePower_dBm-30)/10);
+%% User Locations (Random)
+userDistance = rand(numUsers,1)*cellRadius;
+%% Path Loss Model (Urban Macro - simplified)
+pathLoss_dB = 128.1 + 37.6*log10(userDistance/1000);
+pathLoss = 10.^(-pathLoss_dB/10);
+%% Desired Signal Power
+signalPower = txPower .* pathLoss;
+%% Interference Calculation
+interferencePower = zeros(numUsers,1);
+for i = 1:numInterferingCells
+    interfererDistance = cellRadius + rand(numUsers,1)*cellRadius;
+    interfererPL_dB = 128.1 + 37.6*log10(interfererDistance/1000);
+    interfererPL = 10.^(-interfererPL_dB/10);
+    interferencePower = interferencePower + txPower .* interfererPL;
+end
+%% SINR Calculation
+SINR_noInterference = signalPower ./ noisePower;
+SINR_withInterference = signalPower ./ (interferencePower + noisePower);
+%% Throughput Calculation (Shannon Capacity)
+throughput_noInt = bandwidth * log2(1 + SINR_noInterference);
+throughput_withInt = bandwidth * log2(1 + SINR_withInterference);
+%% Spectral Efficiency
+spectralEff_noInt = log2(1 + SINR_noInterference);
+spectralEff_withInt = log2(1 + SINR_withInterference);
+%% Plot SINR
+figure;
+plot(10*log10(SINR_noInterference),'b','LineWidth',1.5);
+hold on;
+plot(10*log10(SINR_withInterference),'r','LineWidth',1.5);
+grid on;
+xlabel('User Index');
+ylabel('SINR (dB)');
+legend('Without Interference','With Interference');
+title('SINR Comparison');
+%% Plot Throughput
+figure;
+plot(throughput_noInt/1e6,'b','LineWidth',1.5);
+hold on;
+plot(throughput_withInt/1e6,'r','LineWidth',1.5);
+grid on;
+xlabel('User Index');
+ylabel('Throughput (Mbps)');
+legend('Without Interference','With Interference');
+title('Throughput Comparison');
+%% Plot Spectral Efficiency
+figure;
+plot(spectralEff_noInt,'b','LineWidth',1.5);
+hold on;
+plot(spectralEff_withInt,'r','LineWidth',1.5);
+grid on;
+xlabel('User Index');
+ylabel('Spectral Efficiency (bits/s/Hz)');
+legend('Without Interference','With Interference');
+title('Spectral Efficiency Comparison');
+%% Display Average Results
+fprintf('Average SINR without interference (dB): %.2f\n',mean(10*log10(SINR_noInterference)));
+fprintf('Average SINR with interference (dB): %.2f\n',mean(10*log10(SINR_withInterference)));
+fprintf('Average Throughput without interference (Mbps): %.2f\n',mean(throughput_noInt/1e6));
+fprintf('Average Throughput with interference (Mbps): %.2f\n',mean(throughput_withInt/1e6));
+```
